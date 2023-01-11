@@ -77,6 +77,46 @@ class Driver(mattermostautodriver.Driver):
 
         return self.posts.create_post(post)
 
+    def create_post2(
+        self,
+        channel_id: str,
+        message:dict,
+        file_paths: Optional[Sequence[str]] = None,
+        root_id: str = "",
+        props: Dict = {},
+        ephemeral_user_id: Optional[str] = None,
+    ):
+        """Create a post in the specified channel with the specified text.
+
+        Supports sending ephemeral messages if bot permissions allow it. If any file
+        paths are specified, those files will be uploaded to mattermost first and then
+        attached.
+        """
+        if file_paths is None:
+            file_paths = []
+
+        file_ids = (
+            self.upload_files(file_paths, channel_id) if len(file_paths) > 0 else []
+        )
+
+        post = dict(
+            channel_id=channel_id,
+            message=message,
+            file_ids=file_ids,
+            root_id=root_id,
+            props=props,
+        )
+
+        if ephemeral_user_id:
+            return self.posts.create_post_ephemeral(
+                {
+                    "user_id": ephemeral_user_id,
+                    "post": post,
+                }
+            )
+
+        return self.posts.create_post(post)
+
     def get_thread(self, post_id: str):
         warnings.warn(
             "get_thread is deprecated. Use get_post_thread instead", DeprecationWarning
@@ -153,6 +193,49 @@ class Driver(mattermostautodriver.Driver):
         )
 
         return self.create_post(**reply_args)
+
+    def reply_to2(
+        self,
+        message: Message,
+        response:dict,
+        file_paths: Optional[Sequence[str]] = None,
+        props: Dict = {},
+        ephemeral: bool = False,
+        direct: bool = False,
+    ):
+        """Reply to the given message.
+
+        Supports sending ephemeral messages if the bot permissions allow it. If the
+        message is part of a thread, the reply will be added to that thread.
+
+        Also supports replying privately by setting direct=True.
+        """
+        if file_paths is None:
+            file_paths = []
+
+        if direct and not message.is_direct_message:
+            # NOTE we explicitly don't pass root_id as it would refer to a
+            # post in a channel not a private session
+            direct_args = dict(
+                receiver_id=message.user_id,
+                message=response,
+                file_paths=file_paths,
+                props=props,
+                ephemeral_user_id=message.user_id if ephemeral else None,
+            )
+
+            return self.direct_message(**direct_args)
+
+        reply_args = dict(
+            channel_id=message.channel_id,
+            message=response,
+            root_id=message.reply_id,
+            file_paths=file_paths,
+            props=props,
+            ephemeral_user_id=message.user_id if ephemeral else None,
+        )
+
+        return self.create_post2(**reply_args)
 
     def direct_message(
         self,

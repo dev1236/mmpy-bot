@@ -13,7 +13,7 @@ def requires(filename: str):
 
 
 setup(
-    name="mmpy_bot1",
+    name="mmpy_bot",
     # Updated by publish workflow
     version=Path(__file__).parent.joinpath("mmpy_bot/version.txt").read_text().rstrip(),
     author="Alex Tzonkov",
@@ -23,7 +23,7 @@ setup(
     keywords="chat bot mattermost",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/attzonko/mmpy_bot",
+    url="https://github.com/dev1236/mmpy-bot.git",
     python_requires=">=3.8",
     platforms=["Any"],
     packages=find_packages(exclude=excludes),
